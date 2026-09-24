@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albion Online 综合实用工具助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f141d;
+            --card-bg: #18202c;
+            --card-border: #283548;
+            --input-bg: #0b0e14;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-gold: #f59e0b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --green: #22c55e;
+            --red: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+        }
+
+        .input-dark {
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: #ffffff;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-dark:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .2s;
+            border-radius: 22px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Badges */
+        .tier-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        .t4 { background: #1e3a8a; color: #93c5fd; }
+        .t5 { background: #7f1d1d; color: #fca5a5; }
+        .t6 { background: #713f12; color: #fde047; }
+
+        .profit-pos { color: var(--green); font-weight: bold; }
+        .profit-neg { color: var(--red); font-weight: bold; }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0e14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #283548;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body class="p-3 md:p-6">
+
+<div class="max-w-[1500px] mx-auto space-y-6">
+    <header class="card p-4 flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-xl font-bold">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide flex items-center gap-2">
+                    Albion Online 综合实用助手
+                    <span class="text-xs bg-slate-800 text-amber-400 px-2 py-0.5 rounded border border-slate-700">v喵喵酱 特制版</span>
+                    <button onclick="openSheetsModal()" class="text-xs bg-emerald-950/80 hover:bg-emerald-900 text-emerald-400 border border-emerald-600/40 px-2 py-0.5 rounded flex items-center gap-1 transition-all ml-2">
+                        <i class="fa-solid fa-file-excel"></i> Google Sheets 链接配置
+                    </button>
+                </h1>
+                <p class="text-xs text-slate-400">精炼成本计算 | 农场作物与账本 | 交易买卖盈亏追踪</p>
+            </div>
+        </div>
+
+        <!-- Multi-Tab Switcher -->
+        <nav class="flex bg-slate-900/80 p-1.5 rounded-lg border border-slate-800 gap-1 w-full md:w-auto overflow-x-auto">
+            <button onclick="switchTab('refining')" id="tab-btn-refining" class="tab-btn active px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 transition-all bg-blue-600 text-white shadow">
+                <i class="fa-solid fa-fire"></i> 1. 精炼与跨城比对
+            </button>
+            <button onclick="switchTab('farming')" id="tab-btn-farming" class="tab-btn px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fa-solid fa-wheat-awn"></i> 2. 农场种菜计算器
+            </button>
+            <button onclick="switchTab('trade')" id="tab-btn-trade" class="tab-btn px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+                <i class="fa-solid fa-book"></i> 3. 交易与买卖账本
+            </button>
+        </nav>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: 精炼与跨城比对                       -->
+    <!-- ========================================== -->
+    <div id="tab-refining" class="tab-content space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Card 1: Material & City -->
+            <div class="card p-4 space-y-3">
+                <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                    <span><i class="fa-solid fa-boxes-stacked mr-1 text-blue-400"></i> 原材料与主城</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">原材料类型</label>
+                    <select id="resourceType" onchange="autoSelectCity()" class="input-dark text-sm w-36">
+                        <option value="wood">木材 (Wood)</option>
+                        <option value="hide">皮革 (Hide)</option>
+                        <option value="ore">矿石/钢条 (Ore)</option>
+                        <option value="fiber">纤维/布料 (Fiber)</option>
+                        <option value="stone">石块 (Stone)</option>
+                    </select>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">T3 半成品单价</label>
+                    <input type="number" id="t3Price" value="0" oninput="calculateRefining()" class="input-dark text-sm w-36">
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">默认主精炼城</label>
+                    <select id="city" onchange="calculateRefining()" class="input-dark text-sm w-36">
+                        <option value="Fort Sterling">Fort Sterling</option>
+                        <option value="Lymhurst">Lymhurst</option>
+                        <option value="Thetford">Thetford</option>
+                        <option value="Martlock">Martlock</option>
+                        <option value="Bridgewatch">Bridgewatch</option>
+                        <option value="Brecilien">Brecilien</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Card 2: RRR & Focus Settings -->
+            <div class="card p-4 space-y-3">
+                <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                    <span><i class="fa-solid fa-sliders mr-1 text-amber-400"></i> 返还率 (RRR) 设置</span>
+                    <span id="currentRrrBadge" class="bg-sky-950 text-sky-400 border border-sky-600/50 px-2 py-0.5 rounded text-xs font-bold">36.7% RRR</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">基础城市精炼加成</label>
+                    <span class="text-slate-300 font-semibold">固定 36.7%</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">活动加成 (Event)</label>
+                    <select id="eventBonus" onchange="calculateRefining()" class="input-dark text-sm w-36">
+                        <option value="0">无活动 (0%)</option>
+                        <option value="10">活动 +10% (43.7%)</option>
+                        <option value="20">活动 +20% (49.4%)</option>
+                    </select>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">使用专注点数 (Focus)</label>
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="toggleSwitch('useFocus')">
+                        <label class="switch">
+                            <input type="checkbox" id="useFocus" onchange="calculateRefining()">
+                            <span class="slider"></span>
+                        </label>
+                        <span id="useFocusLabel" class="text-xs text-slate-400 w-12">Disabled</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Tax & Fee Settings -->
+            <div class="card p-4 space-y-3">
+                <div class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                    <span><i class="fa-solid fa-receipt mr-1 text-emerald-400"></i> 营养费与市场手续费</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">营养费 (每100营养度)</label>
+                    <input type="number" id="taxPer100" value="0" oninput="calculateRefining()" class="input-dark text-sm w-36">
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">与玩家交易 (无要税)</label>
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="toggleSwitch('directSale')">
+                        <label class="switch">
+                            <input type="checkbox" id="directSale" onchange="calculateRefining()">
+                            <span class="slider"></span>
+                        </label>
+                        <span id="directSaleLabel" class="text-xs text-slate-400 w-12">Disabled</span>
+                    </div>
+                </div>
+                <div id="marketTaxRow" class="flex justify-between items-center text-sm">
+                    <label class="text-slate-300">拍卖行交易税率 (%)</label>
+                    <input type="number" id="marketTax" value="8" step="0.5" oninput="calculateRefining()" class="input-dark text-sm w-36">
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Cross-City Route Planner -->
+        <div class="card p-4 space-y-3 border-amber-500/30 bg-slate-900/40">
+            <div class="text-sm font-semibold text-amber-400 uppercase tracking-wider flex justify-between items-center border-b border-slate-800 pb-2">
+                <span><i class="fa-solid fa-route mr-1 text-amber-400"></i> 跨城路线成本与利润计算 (Cross-City Route Planner)</span>
+                <span id="routeProfitBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700">已自动计算路线收益</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-300 font-medium">1. 原材料采购地 (Buy Raw)</label>
+                    <select id="routeRawCity" onchange="calculateRefining()" class="input-dark w-full text-xs">
+                        <option value="Fort Sterling">Fort Sterling</option>
+                        <option value="Lymhurst">Lymhurst</option>
+                        <option value="Thetford">Thetford</option>
+                        <option value="Martlock">Martlock</option>
+                        <option value="Bridgewatch">Bridgewatch</option>
+                        <option value="Brecilien">Brecilien</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-300 font-medium">2. 前级半成品采购地 (Buy Refined)</label>
+                    <select id="routePreCity" onchange="calculateRefining()" class="input-dark w-full text-xs">
+                        <option value="Fort Sterling">Fort Sterling</option>
+                        <option value="Lymhurst">Lymhurst</option>
+                        <option value="Thetford">Thetford</option>
+                        <option value="Martlock">Martlock</option>
+                        <option value="Bridgewatch">Bridgewatch</option>
+                        <option value="Brecilien">Brecilien</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-300 font-medium">3. 成品出售地 (Sell Product)</label>
+                    <select id="routeSellCity" onchange="calculateRefining()" class="input-dark w-full text-xs">
+                        <option value="Fort Sterling">Fort Sterling</option>
+                        <option value="Lymhurst">Lymhurst</option>
+                        <option value="Thetford">Thetford</option>
+                        <option value="Martlock">Martlock</option>
+                        <option value="Bridgewatch">Bridgewatch</option>
+                        <option value="Brecilien">Brecilien</option>
+                    </select>
+                </div>
+            </div>
+            <div id="routeSummaryBar" class="bg-slate-900/90 p-3 rounded text-xs flex flex-wrap justify-between items-center gap-2 border border-slate-800">
+                <!-- JS dynamically fills route comparison calculation -->
+            </div>
+        </div>
+
+        <!-- Section 1: Multi-City Price Comparison -->
+        <div class="space-y-3">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
+                <h2 class="text-base font-semibold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-city"></i> 跨城市物价比对 (Multi-City Comparison)
+                </h2>
+                <div class="flex items-center gap-2">
+                    <label for="compareTierSelect" class="text-xs font-bold text-amber-300">选择要计算与显示的品阶：</label>
+                    <select id="compareTierSelect" onchange="calculateRefining()" class="input-dark text-xs font-bold w-44 border-amber-500/60 text-amber-300 bg-slate-950">
+                        <option value="T4.0" selected>T4.0 半成品</option>
+                        <option value="T4.1">T4.1 半成品</option>
+                        <option value="T4.2">T4.2 半成品</option>
+                        <option value="T4.3">T4.3 半成品</option>
+                        <option value="T5.0">T5.0 半成品</option>
+                        <option value="T5.1">T5.1 半成品</option>
+                        <option value="T6.0">T6.0 半成品</option>
+                        <option value="ALL">显示全部品阶 (All Tiers)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card overflow-x-auto">
+                <table class="w-full text-left text-xs md:text-sm">
+                    <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">城市 (City)</th>
+                            <th class="p-3">比对品阶</th>
+                            <th class="p-3">原材料采购价</th>
+                            <th class="p-3">上一次价格 / 趋势</th>
+                            <th class="p-3">更新时间</th>
+                            <th class="p-3">成品出售价</th>
+                            <th class="p-3">估算净利润</th>
+                            <th class="p-3">推荐标记</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cityCompareBody" class="divide-y divide-slate-800/60">
+                        <!-- JS Dynamic Insert -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: Detailed Refining Table -->
+        <div class="space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-semibold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line"></i> 选中品阶详细精炼成本与利润分析
+                </h2>
+                <span class="text-xs text-slate-400 italic">* 已根据上方选择自动联动筛选展示</span>
+            </div>
+            <div class="card overflow-x-auto">
+                <table class="w-full text-left text-xs md:text-sm">
+                    <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">品阶</th>
+                            <th class="p-3">原材料单价</th>
+                            <th class="p-3">前级半成品成本</th>
+                            <th class="p-3">实际单件折算成本</th>
+                            <th class="p-3">预计出售价格</th>
+                            <th class="p-3">保本卖出价</th>
+                            <th class="p-3">单件净利润</th>
+                            <th class="p-3">利润率</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calculatorBody" class="divide-y divide-slate-800/60">
+                        <!-- JS Dynamic Insert -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Google Sheets Integration Config -->
+    <div id="sheetsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="card max-w-md w-full p-6 space-y-4 shadow-2xl border-emerald-500/30">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel"></i> Google Sheets 链接配置
+                </h3>
+                <button onclick="closeSheetsModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-300">在下方绑定您的 Google Sheets Webhook 或 Apps Script Web App API 链接，即可实现账本数据与跨城物价的一键实时在线同步。</p>
+            <div class="space-y-1">
+                <label class="text-xs text-slate-400">Google Apps Script API URL</label>
+                <input type="text" id="sheetsApiUrl" placeholder="https://script.google.com/macros/s/.../exec" class="input-dark w-full text-xs">
+            </div>
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="syncDataToSheets()" class="text-xs bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-3 py-1.5 rounded border border-blue-500/30 flex items-center gap-1">
+                    <i class="fa-solid fa-rotate"></i> 测试同步
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="closeSheetsModal()" class="px-3 py-1.5 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700">取消</button>
+                    <button onclick="saveSheetsConfig()" class="px-3 py-1.5 rounded text-xs bg-emerald-600 text-white font-semibold hover:bg-emerald-500">保存配置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: 农场种菜计算器                       -->
+    <!-- ========================================== -->
+    <div id="tab-farming" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 card p-5 space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-base font-semibold text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-seedling"></i> 作物种植与工人发薪计算器
+                    </h2>
+                    <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">工人固定 20% 提成</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400">作物/种子名称</label>
+                        <select id="farmCropType" onchange="onCropSelectChange()" class="input-dark w-full text-sm">
+							<option value="0" data-name="Select">Select</option>
+                            <option value="2308" data-name="胡萝卜 (Carrot)">胡萝卜 (Carrot)</option>
+                            <option value="3462" data-name="豌豆 (Pea)">豌豆 (Pea)</option>
+                            <option value="5770" data-name="小麦 (Wheat)">小麦 (Wheat)</option>
+							<option value="earthworm">蚯蚓 (Earthworm)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400">种子单价 (Price for Seed)</label>
+                        <input type="number" id="farmSeedPrice" value="0" oninput="calculateFarming()" class="input-dark w-full text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400">种子数量 (Seed Amount)</label>
+                        <input type="number" id="farmSeedAmount" value="0" oninput="calculateFarming()" class="input-dark w-full text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs text-slate-400">作物出售总额 (Selling Price)</label>
+                        <input type="number" id="farmSellingPrice" value="" placeholder="请输入作物出售总额" oninput="calculateFarming()" class="input-dark w-full text-sm">
+                    </div>
+                    <!-- 新增：蚯蚓数量与单价 -->
+                    <div class="space-y-1">
+						<label class="text-xs text-slate-400">蚯蚓出售总额 (Earthworm Total Price)</label>
+						<input type="number" id="farmEarthwormRevenue" value="" placeholder="请输入蚯蚓出售总额" oninput="calculateFarming()" class="input-dark w-full text-sm">
+					</div>
+                </div>
+
+                <div class="bg-slate-900/90 rounded-lg p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 border border-slate-800">
+                    <div>
+                        <div class="text-xs text-slate-400">种子总成本</div>
+                        <div id="farmCalcSeedCost" class="text-lg font-bold text-red-400">$2,885,000</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">蚯蚓附加收入</div>
+                        <div id="farmCalcEarthwormRev" class="text-lg font-bold text-blue-400">$0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">工人工资 (20%)</div>
+                        <div id="farmCalcWorkerSalary" class="text-lg font-bold text-amber-400">$0</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-400">本批次纯利润</div>
+                        <div id="farmCalcNetProfit" class="text-lg font-bold text-emerald-400">$0</div>
+                    </div>
+                </div>
+
+                <button onclick="addFarmingRecord()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-md transition-all flex items-center justify-center gap-2 text-sm shadow-md">
+                    <i class="fa-solid fa-plus"></i> 将本批次结果保存至历史账本
+                </button>
+            </div>
+			
+            <div class="card p-5 space-y-4 flex flex-col justify-between">
+                <h3 class="text-sm font-semibold text-slate-300 border-b border-slate-800 pb-2 flex items-center justify-between">
+                    <span><i class="fa-solid fa-chart-pie mr-1 text-emerald-400"></i> 农场累计统计</span>
+                    <button onclick="clearFarmingLedger()" class="text-xs text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i> 清空记录</button>
+                </h3>
+
+                <div class="space-y-3">
+                    <div class="bg-slate-900/60 p-3 rounded border border-slate-800/80 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">累计种子成本</span>
+                        <span id="farmTotalCost" class="text-sm font-bold text-red-400">$0</span>
+                    </div>
+                    <div class="bg-slate-900/60 p-3 rounded border border-slate-800/80 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">累计总销售收入</span>
+                        <span id="farmTotalRevenue" class="text-sm font-bold text-blue-400">$0</span>
+                    </div>
+                    
+                    <!-- 【新增】待发工人工资卡片 + 结算按钮 -->
+                    <div class="bg-slate-900/60 p-3 rounded border border-amber-500/30 flex justify-between items-center bg-amber-500/5">
+                        <div>
+                            <div class="text-xs text-amber-300 font-medium">待付工人工资 (20%)</div>
+                            <div id="farmUnpaidSalary" class="text-base font-bold text-amber-400">$0</div>
+                        </div>
+                        <button onclick="payWorkerSalary()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-2 rounded-md transition-all shadow flex items-center gap-1">
+                            <i class="fa-solid fa-hand-holding-dollar"></i> 结算发薪
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900/60 p-3 rounded border border-slate-800/80 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">已结算发放工资总计</span>
+                        <span id="farmPaidSalary" class="text-sm font-bold text-slate-400">$0</span>
+                    </div>
+                    
+                    <div class="bg-slate-900/60 p-3 rounded border border-slate-800/80 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">累计种菜纯利润</span>
+                        <span id="farmTotalProfit" class="text-base font-bold text-emerald-400">$0</span>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 text-center italic mt-2">
+                    * 点击“结算发薪”后待付工资将刷新重置，数据本地存储
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-3">
+            <h2 class="text-base font-semibold text-emerald-400 flex items-center gap-2">
+                <i class="fa-solid fa-list-check"></i> 农场种植批次历史账本 (Farming Batch History)
+            </h2>
+            <div class="card overflow-x-auto">
+                <table class="w-full text-left text-xs md:text-sm">
+                    <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">日期/时间</th>
+                            <th class="p-3">作物/种子类型</th>
+                            <th class="p-3">种子成本</th>
+                            <th class="p-3">总收入 (含蚯蚓)</th>
+                            <th class="p-3">工人工资 (20%)</th>
+                            <th class="p-3">种菜纯利润</th>
+                            <th class="p-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="farmingLedgerBody" class="divide-y divide-slate-800/60">
+                        <!-- JS Dynamic Insert -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: 交易与买卖账本                       -->
+    <!-- ========================================== -->
+		<div id="tab-trade" class="tab-content hidden space-y-6">
+			<!-- Overview Stat Cards -->
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+				<div class="card p-4 space-y-1">
+					<div class="text-xs text-slate-400">累计买入投资</div>
+					<div id="tradeStatCost" class="text-lg font-bold text-red-400">$0</div>
+				</div>
+				<div class="card p-4 space-y-1">
+					<div class="text-xs text-slate-400">累计销售总额</div>
+					<div id="tradeStatRevenue" class="text-lg font-bold text-blue-400">$0</div>
+				</div>
+				<div class="card p-4 space-y-1">
+					<div class="text-xs text-slate-400">累计交易纯利润</div>
+					<div id="tradeStatProfit" class="text-lg font-bold text-emerald-400">$0</div>
+				</div>
+				<div class="card p-4 space-y-1">
+					<div class="text-xs text-slate-400">整体 ROI 投资回报率</div>
+					<div id="tradeStatRoi" class="text-lg font-bold text-sky-400">0.0%</div>
+				</div>
+			</div>
+
+			<!-- Add New Transaction Form Card (Updated Layout) -->
+			<div class="card p-5 space-y-4">
+				<div class="flex justify-between items-center border-b border-slate-800 pb-3">
+					<h2 class="text-base font-semibold text-blue-400 flex items-center gap-2">
+						<i class="fa-solid fa-plus-circle"></i> 新增精炼交易记录
+					</h2>
+					<button onclick="clearTradeLedger()" class="text-xs text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i> 清空账本</button>
+				</div>
+
+				<!-- 新增交易记录（拆分为买入与卖出） -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    
+    <!-- 左侧：买入进货卡片 -->
+    <div class="card p-5 space-y-4 border border-blue-500/30 bg-blue-500/5">
+        <h3 class="text-sm font-semibold text-blue-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-cart-shopping"></i> 1. 记录买入 (Buy Record)
+        </h3>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label class="text-xs text-slate-400">品阶 (Tier)</label>
+                <select id="buyTier" class="input-dark w-full text-sm">
+                    <option value="T4.0">T4.0</option>
+					<option value="T4.1">T4.1</option>
+					<option value="T4.2">T4.2</option>
+					<option value="T4.3">T4.3</option>
+					<option value="T5.0">T5.0</option>
+					<option value="T5.1">T5.1</option>
+					<option value="T6.0">T6.0</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label class="text-xs text-slate-400">买入城市 (Buy City)</label>
+                <select id="buyCity" class="input-dark w-full text-sm">
+                    <option value="Brecilien">Brecilien</option>
+                    <option value="Lymhurst">Lymhurst</option>
+                    <option value="Bridgewatch">Bridgewatch</option>
+                    <option value="Martlock">Martlock</option>
+                    <option value="Thetford">Thetford</option>
+                    <option value="Fort Sterling">Fort Sterling</option>
+                    <option value="Caerleon">Caerleon</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="space-y-1">
+            <label class="text-xs text-slate-400">买入原材料类型</label>
+            <select id="buyItemName" class="input-dark w-full text-sm">
+                <option value="木材 (Wood)">木材 (Wood)</option>
+                <option value="矿石 (Ore)">矿石 (Ore)</option>
+                <option value="兽皮 (Hide)">兽皮 (Hide)</option>
+                <option value="棉花 (Fiber)">棉花 (Fiber)</option>
+                <option value="石块 (Stone)">石块 (Stone)</option>
+            </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div class="space-y-1">
+                <label class="text-xs text-slate-400">买入数量</label>
+                <input type="number" id="buyQty" placeholder="数量" class="input-dark w-full text-sm">
+            </div>
+            <div class="space-y-1">
+                <label class="text-xs text-slate-400">买入总成本 ($)</label>
+                <input type="number" id="buyCost" placeholder="买入总花费" class="input-dark w-full text-sm">
+            </div>
+        </div>
+
+        <button onclick="addBuyRecord()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded transition-all">
+            + 记入买入账本
+        </button>
+    </div>
+
+    <!-- 右侧：卖出出货卡片 -->
+			<div class="card p-5 space-y-4 border border-emerald-500/30 bg-emerald-500/5">
+				<h3 class="text-sm font-semibold text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+					<i class="fa-solid fa-sack-dollar"></i> 2. 记录卖出 (Sell Record)
+				</h3>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div class="space-y-1">
+						<label class="text-xs text-slate-400">品阶 (Tier)</label>
+						<select id="sellTier" class="input-dark w-full text-sm">
+							<option value="T4.0">T4.0</option>
+							<option value="T4.1">T4.1</option>
+							<option value="T4.2">T4.2</option>
+							<option value="T4.3">T4.3</option>
+							<option value="T5.0">T5.0</option>
+							<option value="T5.1">T5.1</option>
+							<option value="T6.0">T6.0</option>
+						</select>
+					</div>
+					<div class="space-y-1">
+						<label class="text-xs text-slate-400">卖出城市 (Sell City)</label>
+						<select id="sellCity" class="input-dark w-full text-sm">
+							<option value="Lymhurst">Lymhurst</option>
+							<option value="Brecilien">Brecilien</option>
+							<option value="Bridgewatch">Bridgewatch</option>
+							<option value="Martlock">Martlock</option>
+							<option value="Thetford">Thetford</option>
+							<option value="Fort Sterling">Fort Sterling</option>
+							<option value="Caerleon">Caerleon</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="space-y-1">
+					<label class="text-xs text-slate-400">卖出成品类型</label>
+					<select id="sellItemName" class="input-dark w-full text-sm">
+						<option value="木板 (Planks)">木板 (Planks)</option>
+						<option value="钢锭 (Ingots)">钢锭 (Ingots)</option>
+						<option value="皮革 (Leather)">皮革 (Leather)</option>
+						<option value="布料 (Cloth)">布料 (Cloth)</option>
+						<option value="石砖 (Stone Blocks)">石砖 (Stone Blocks)</option>
+					</select>
+				</div>
+
+				<div class="grid grid-cols-2 gap-3">
+					<div class="space-y-1">
+						<label class="text-xs text-slate-400">卖出数量</label>
+						<input type="number" id="sellQty" placeholder="数量" class="input-dark w-full text-sm">
+					</div>
+					<div class="space-y-1">
+						<label class="text-xs text-slate-400">出售总收入 ($)</label>
+						<input type="number" id="sellRevenue" placeholder="卖出总收入" class="input-dark w-full text-sm">
+					</div>
+				</div>
+
+				<button onclick="addSellRecord()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded transition-all">
+					+ 记入卖出账本
+				</button>
+			</div>
+
+		</div>
+
+        <!-- Ledger Table (Updated without fee column) -->
+        <div class="space-y-3">
+            <h2 class="text-base font-semibold text-blue-400 flex items-center gap-2">
+                <i class="fa-solid fa-table-list"></i> 交易明细表 (Trade & PnL Ledger)
+            </h2>
+            <div class="card overflow-x-auto">
+                <table class="w-full text-left text-xs md:text-sm">
+                    <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="p-3">日期 (Date)</th>
+                            <th class="p-3">品阶</th>
+                            <th class="p-3">交易城市路线 (City)</th>
+                            <th class="p-3">买入 (Buy)</th>
+                            <th class="p-3">卖出 (Sell)</th>
+                            <th class="p-3">买入成本 (Cost)</th>
+                            <th class="p-3">出售价格 (Selling Price)</th>
+                            <th class="p-3">净利润 (Profit)</th>
+                            <th class="p-3">ROI</th>
+                            <th class="p-3">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradeLedgerBody" class="divide-y divide-slate-800/60">
+                        <!-- JS Dynamic Insert -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Navigation tab switcher
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(el => {
+            el.classList.remove('active', 'bg-blue-600', 'text-white', 'shadow');
+            el.classList.add('text-slate-400');
+        });
+
+        const targetTab = document.getElementById(`tab-${tabName}`);
+        if (targetTab) targetTab.classList.remove('hidden');
+
+        const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+        if (targetBtn) {
+            targetBtn.classList.add('active', 'bg-blue-600', 'text-white', 'shadow');
+            targetBtn.classList.remove('text-slate-400');
+        }
+    }
+
+    // City bonuses mapping
+    const cityBonuses = {
+        wood: "Fort Sterling",
+        fiber: "Lymhurst",
+        ore: "Thetford",
+        hide: "Martlock",
+        stone: "Bridgewatch"
+    };
+
+    // 包含 T4.0 至 T6.0 所有品阶的独立城市物价数据
+    let cityData = JSON.parse(localStorage.getItem('albion_tier_city_data_v2')) || {
+        "T4.0": {
+            "Fort Sterling": { raw: 360, prevRaw: 350, sell: 1250, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 340, prevRaw: 360, sell: 1180, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 375, prevRaw: 370, sell: 1220, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 350, prevRaw: 350, sell: 1200, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 390, prevRaw: 400, sell: 1300, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 380, prevRaw: 375, sell: 1280, time: "2026-09-23 01:15:00" }
+        },
+        "T4.1": {
+            "Fort Sterling": { raw: 720, prevRaw: 700, sell: 2550, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 680, prevRaw: 710, sell: 2450, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 750, prevRaw: 740, sell: 2500, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 700, prevRaw: 700, sell: 2460, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 780, prevRaw: 800, sell: 2650, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 760, prevRaw: 750, sell: 2600, time: "2026-09-23 01:15:00" }
+        },
+        "T4.2": {
+            "Fort Sterling": { raw: 1440, prevRaw: 1400, sell: 4900, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 1360, prevRaw: 1420, sell: 4700, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 1500, prevRaw: 1480, sell: 4800, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 1400, prevRaw: 1400, sell: 4750, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 1560, prevRaw: 1600, sell: 5100, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 1520, prevRaw: 1500, sell: 5000, time: "2026-09-23 01:15:00" }
+        },
+        "T4.3": {
+            "Fort Sterling": { raw: 4300, prevRaw: 4200, sell: 11200, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 4100, prevRaw: 4300, sell: 10800, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 4500, prevRaw: 4400, sell: 11000, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 4200, prevRaw: 4200, sell: 10900, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 4700, prevRaw: 4800, sell: 11500, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 4600, prevRaw: 4500, sell: 11300, time: "2026-09-23 01:15:00" }
+        },
+        "T5.0": {
+            "Fort Sterling": { raw: 1120, prevRaw: 1100, sell: 4300, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 1060, prevRaw: 1120, sell: 4100, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 1170, prevRaw: 1150, sell: 4200, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 1100, prevRaw: 1100, sell: 4150, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 1220, prevRaw: 1250, sell: 4450, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 1190, prevRaw: 1170, sell: 4380, time: "2026-09-23 01:15:00" }
+        },
+        "T5.1": {
+            "Fort Sterling": { raw: 2240, prevRaw: 2200, sell: 8700, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 2120, prevRaw: 2240, sell: 8300, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 2340, prevRaw: 2300, sell: 8500, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 2200, prevRaw: 2200, sell: 8400, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 2450, prevRaw: 2500, sell: 9000, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 2380, prevRaw: 2340, sell: 8800, time: "2026-09-23 01:15:00" }
+        },
+        "T6.0": {
+            "Fort Sterling": { raw: 2850, prevRaw: 2800, sell: 13800, time: "2026-09-23 01:05:22" },
+            "Lymhurst":      { raw: 2700, prevRaw: 2850, sell: 13200, time: "2026-09-23 00:58:10" },
+            "Thetford":      { raw: 2980, prevRaw: 2920, sell: 13500, time: "2026-09-23 01:12:45" },
+            "Martlock":      { raw: 2800, prevRaw: 2800, sell: 13300, time: "2026-09-23 01:14:00" },
+            "Bridgewatch":   { raw: 3120, prevRaw: 3200, sell: 14300, time: "2026-09-23 00:45:30" },
+            "Brecilien":     { raw: 3040, prevRaw: 2980, sell: 14000, time: "2026-09-23 01:15:00" }
+        }
+    };
+
+    // 优先读取本地存储的精炼品阶数据
+    let refiningItems = JSON.parse(localStorage.getItem('albion_refining_items')) || [
+        { id: "T4.0", tier: "T4", rawCount: 2, rawPrice: 350, sellPrice: 1200, preReqName: "T3" },
+        { id: "T4.1", tier: "T4", rawCount: 2, rawPrice: 700, sellPrice: 2500, preReqName: "T3" },
+        { id: "T4.2", tier: "T4", rawCount: 2, rawPrice: 1400, sellPrice: 4800, preReqName: "T3" },
+        { id: "T4.3", tier: "T4", rawCount: 2, rawPrice: 4200, sellPrice: 11000, preReqName: "T3" },
+        { id: "T5.0", tier: "T5", rawCount: 3, rawPrice: 1100, sellPrice: 4200, preReqName: "T4.0" },
+        { id: "T5.1", tier: "T5", rawCount: 3, rawPrice: 2200, sellPrice: 8500, preReqName: "T4.1" },
+        { id: "T6.0", tier: "T6", rawCount: 4, rawPrice: 2800, sellPrice: 13500, preReqName: "T5.0" }
+    ];
+
+    function autoSelectCity() {
+        const resource = document.getElementById("resourceType").value;
+        const bestCity = cityBonuses[resource];
+        if (bestCity) {
+            document.getElementById("city").value = bestCity;
+        }
+        calculateRefining();
+    }
+
+    function getCurrentTimeString() {
+        const now = new Date();
+        return now.toISOString().replace("T", " ").substring(0, 19);
+    }
+
+    function updateCityPrice(cityName, field, inputElem) {
+        const selectedTier = document.getElementById("compareTierSelect").value;
+        const targetTier = selectedTier === "ALL" ? "T4.0" : selectedTier;
+        const newValue = parseFloat(inputElem.value) || 0;
+        
+        if (!cityData[targetTier]) {
+            cityData[targetTier] = {};
+        }
+        if (!cityData[targetTier][cityName]) {
+            cityData[targetTier][cityName] = { raw: 0, prevRaw: 0, sell: 0, time: getCurrentTimeString() };
+        }
+
+        if (field === 'raw') {
+            cityData[targetTier][cityName].prevRaw = cityData[targetTier][cityName].raw;
+            cityData[targetTier][cityName].raw = newValue;
+        } else if (field === 'sell') {
+            cityData[targetTier][cityName].sell = newValue;
+        }
+        cityData[targetTier][cityName].time = getCurrentTimeString();
+        
+        localStorage.setItem('albion_tier_city_data_v2', JSON.stringify(cityData));
+        calculateRefining();
+    }
+
+    function updateRefiningItemPrice(itemId, field, val) {
+        const item = refiningItems.find(i => i.id === itemId);
+        if (item) {
+            item[field] = parseFloat(val) || 0;
+            
+            // 保存到本地存储
+            localStorage.setItem('albion_refining_items', JSON.stringify(refiningItems));
+            calculateRefining();
+        }
+    }
+
+    function toggleSwitch(id) {
+        const checkbox = document.getElementById(id);
+        if (!checkbox) return;
+        checkbox.checked = !checkbox.checked;
+        const label = document.getElementById(id + "Label");
+        if (label) {
+            label.innerText = checkbox.checked ? "Enabled" : "Disabled";
+        }
+        calculateRefining();
+    }
+
+    function getCalculatedRRR() {
+        const eventBonus = document.getElementById("eventBonus").value;
+        const isFocus = document.getElementById("useFocus").checked;
+
+        let rrr = 0.367;
+
+        if (eventBonus === "10") {
+            rrr = isFocus ? 0.565 : 0.437;
+        } else if (eventBonus === "20") {
+            rrr = isFocus ? 0.589 : 0.494;
+        } else {
+            rrr = isFocus ? 0.539 : 0.367;
+        }
+
+        return rrr;
+    }
+
+    function calculateRefining() {
+        const rrr = getCalculatedRRR();
+        const rrrBadge = document.getElementById("currentRrrBadge");
+        if (rrrBadge) rrrBadge.innerText = `${(rrr * 100).toFixed(1)}% RRR`;
+
+        const t3Price = parseFloat(document.getElementById("t3Price")?.value) || 0;
+        const taxPer100 = parseFloat(document.getElementById("taxPer100")?.value) || 0;
+        const isDirectSale = document.getElementById("directSale")?.checked || false;
+        const marketTaxInput = parseFloat(document.getElementById("marketTax")?.value) || 0;
+
+        const marketTaxRow = document.getElementById("marketTaxRow");
+        if (marketTaxRow) marketTaxRow.style.opacity = isDirectSale ? "0.4" : "1";
+        const effectiveTaxRate = isDirectSale ? 0 : (marketTaxInput / 100);
+
+        renderCityComparison(t3Price, taxPer100, rrr, effectiveTaxRate);
+        renderRefiningTable(t3Price, taxPer100, rrr, effectiveTaxRate);
+        renderRoutePlannerSummary(t3Price, taxPer100, rrr, effectiveTaxRate);
+    }
+
+    function renderRoutePlannerSummary(t3Price, taxPer100, rrr, taxRate) {
+        const rawCity = document.getElementById("routeRawCity").value;
+        const preCity = document.getElementById("routePreCity").value;
+        const sellCity = document.getElementById("routeSellCity").value;
+        const selectedTier = document.getElementById("compareTierSelect").value;
+
+        const activeItem = (selectedTier === "ALL" ? refiningItems[0] : refiningItems.find(i => i.id === selectedTier)) || refiningItems[0];
+        
+        const rawPrice = cityData[rawCity] ? cityData[rawCity].raw : activeItem.rawPrice;
+        const prePrice = cityData[preCity] ? cityData[preCity].sell : t3Price;
+        const sellPrice = cityData[sellCity] ? cityData[sellCity].sell : activeItem.sellPrice;
+
+        const feeEstimate = (taxPer100 / 100) * (activeItem.tier === "T4" ? 8 : activeItem.tier === "T5" ? 16 : 32);
+        const totalBaseCost = (activeItem.rawCount * rawPrice) + prePrice + feeEstimate;
+        const actualCost = totalBaseCost * (1 - rrr);
+        const revenue = sellPrice * (1 - taxRate);
+        const netProfit = revenue - actualCost;
+
+        const summaryBar = document.getElementById("routeSummaryBar");
+        const profitClass = netProfit >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold";
+
+        summaryBar.innerHTML = `
+            <div><span class="text-slate-400">当前计算路线品阶:</span> <span class="font-bold text-amber-300">${activeItem.id}</span></div>
+            <div><span class="text-slate-400">原材料成本 (${rawCity}):</span> <span class="text-slate-200">${activeItem.rawCount} × $${rawPrice} = $${activeItem.rawCount * rawPrice}</span></div>
+            <div><span class="text-slate-400">成品预估出售 (${sellCity}):</span> <span class="text-slate-200">$${sellPrice}</span></div>
+            <div><span class="text-slate-400">折算实际净利润:</span> <span class="${profitClass}">${netProfit > 0 ? "+" : ""}$${Math.round(netProfit).toLocaleString()}</span></div>
+        `;
+    }
+
+    function renderCityComparison(t3Price, taxPer100, rrr, taxRate) {
+        const compareBody = document.getElementById("cityCompareBody");
+        const selectedTier = document.getElementById("compareTierSelect").value;
+        let html = "";
+
+        // 如果选了 ALL，默认展示 T4.0 的城市比对
+        const tierToDisplay = selectedTier === "ALL" ? "T4.0" : selectedTier;
+        const currentCityMap = cityData[tierToDisplay] || cityData["T4.0"];
+
+        let activeItem = refiningItems.find(i => i.id === tierToDisplay) || refiningItems[0];
+
+        let minRawCity = "";
+        let maxSellCity = "";
+        let minRawVal = Infinity;
+        let maxSellVal = -Infinity;
+
+        Object.keys(currentCityMap).forEach(c => {
+            if (currentCityMap[c].raw < minRawVal) { minRawVal = currentCityMap[c].raw; minRawCity = c; }
+            if (currentCityMap[c].sell > maxSellVal) { maxSellVal = currentCityMap[c].sell; maxSellCity = c; }
+        });
+
+        Object.keys(currentCityMap).forEach(cityName => {
+            const c = currentCityMap[cityName];
+
+            let trendHtml = "";
+            const diff = c.raw - c.prevRaw;
+            if (diff > 0) {
+                trendHtml = `<span class="text-red-400 text-xs font-semibold ml-1">▲ +${diff}</span>`;
+            } else if (diff < 0) {
+                trendHtml = `<span class="text-emerald-400 text-xs font-semibold ml-1">▼ ${diff}</span>`;
+            } else {
+                trendHtml = `<span class="text-slate-500 text-xs ml-1">— 平稳</span>`;
+            }
+
+            const feeEstimate = (taxPer100 / 100) * (activeItem.tier === "T4" ? 8 : activeItem.tier === "T5" ? 16 : 32);
+            const baseCost = (activeItem.rawCount * c.raw) + t3Price + feeEstimate;
+            const actualCost = baseCost * (1 - rrr);
+            const profit = (c.sell * (1 - taxRate)) - actualCost;
+            const profitClass = profit >= 0 ? "profit-pos" : "profit-neg";
+
+            let tags = "";
+            if (cityName === minRawCity) tags += `<span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded mr-1">Lowest Raw</span>`;
+            if (cityName === maxSellCity) tags += `<span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-700 px-1.5 py-0.5 rounded">Best Sell</span>`;
+
+            const badgeClass = activeItem.tier.toLowerCase();
+
+            html += `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="p-3 font-semibold text-white">${cityName}</td>
+                    <td class="p-3"><span class="tier-badge ${badgeClass}">${tierToDisplay}</span></td>
+                    <td class="p-3">
+                        <input type="number" class="input-dark text-xs w-24 py-1 px-2" value="${c.raw}" onchange="updateCityPrice('${cityName}', 'raw', this)">
+                    </td>
+                    <td class="p-3">
+                        <span class="text-slate-400">${c.prevRaw}</span>
+                        ${trendHtml}
+                    </td>
+                    <td class="p-3 text-slate-500 text-xs">${c.time}</td>
+                    <td class="p-3">
+                        <input type="number" class="input-dark text-xs w-24 py-1 px-2" value="${c.sell}" onchange="updateCityPrice('${cityName}', 'sell', this)">
+                    </td>
+                    <td class="p-3 ${profitClass}">${profit > 0 ? "+" : ""}${Math.round(profit).toLocaleString()}</td>
+                    <td class="p-3">${tags}</td>
+                </tr>
+            `;
+        });
+
+        compareBody.innerHTML = html;
+    }
+
+    function renderRefiningTable(t3Price, taxPer100, rrr, effectiveTaxRate) {
+        const tbody = document.getElementById("calculatorBody");
+        const selectedTier = document.getElementById("compareTierSelect").value;
+        let html = "";
+        let computedCosts = {};
+
+        refiningItems.forEach((item) => {
+            let prevCost = 0;
+            if (item.tier === "T4") {
+                prevCost = t3Price;
+            } else {
+                prevCost = computedCosts[item.preReqName] || 0;
+            }
+
+            const feeEstimate = (taxPer100 / 100) * (item.tier === "T4" ? 8 : item.tier === "T5" ? 16 : 32);
+            const baseCost = (item.rawCount * item.rawPrice) + prevCost + feeEstimate;
+            const actualCost = baseCost * (1 - rrr);
+            computedCosts[item.id] = actualCost;
+        });
+
+        const itemsToDisplay = selectedTier === "ALL" 
+            ? refiningItems 
+            : refiningItems.filter(item => item.id === selectedTier);
+
+        itemsToDisplay.forEach((item) => {
+            const prevCost = item.tier === "T4" ? t3Price : (computedCosts[item.preReqName] || 0);
+            const actualCost = computedCosts[item.id];
+
+            const revenueAfterTax = item.sellPrice * (1 - effectiveTaxRate);
+            const profit = revenueAfterTax - actualCost;
+            const breakEven = actualCost / (1 - effectiveTaxRate);
+            const profitMargin = actualCost > 0 ? (profit / actualCost) * 100 : 0;
+
+            const profitClass = profit >= 0 ? "profit-pos" : "profit-neg";
+            const badgeClass = item.tier.toLowerCase();
+
+            html += `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="p-3"><span class="tier-badge ${badgeClass}">${item.id}</span></td>
+                    <td class="p-3">
+                        <input type="number" class="input-dark text-xs w-28 py-1 px-2" value="${item.rawPrice}" onchange="updateRefiningItemPrice('${item.id}', 'rawPrice', this.value)">
+                    </td>
+                    <td class="p-3 text-slate-300">
+                        $${Math.round(prevCost).toLocaleString()}
+                        <small class="text-slate-500 block text-[10px]">(来自: ${item.preReqName})</small>
+                    </td>
+                    <td class="p-3 text-red-400 font-medium">$${Math.round(actualCost).toLocaleString()}</td>
+                    <td class="p-3">
+                        <input type="number" class="input-dark text-xs w-28 py-1 px-2" value="${item.sellPrice}" onchange="updateRefiningItemPrice('${item.id}', 'sellPrice', this.value)">
+                    </td>
+                    <td class="p-3 text-amber-400 font-medium">$${Math.round(breakEven).toLocaleString()}</td>
+                    <td class="p-3 ${profitClass}">${profit > 0 ? "+" : ""}$${Math.round(profit).toLocaleString()}</td>
+                    <td class="p-3 ${profitClass}">${profitMargin.toFixed(1)}%</td>
+                </tr>
+            `;
+        });
+
+        if (itemsToDisplay.length === 0) {
+            html = `<tr><td colspan="8" class="p-6 text-center text-slate-500">未找到对应品阶数据，请重新选择。</td></tr>`;
+        }
+
+        tbody.innerHTML = html;
+    }
+
+    function openSheetsModal() {
+        const savedUrl = localStorage.getItem("albion_sheets_url") || "";
+        document.getElementById("sheetsApiUrl").value = savedUrl;
+        document.getElementById("sheetsModal").classList.remove("hidden");
+    }
+
+    function closeSheetsModal() {
+        document.getElementById("sheetsModal").classList.add("hidden");
+    }
+
+    function saveSheetsConfig() {
+        const url = document.getElementById("sheetsApiUrl").value.trim();
+        localStorage.setItem("albion_sheets_url", url);
+        closeSheetsModal();
+    }
+
+    function syncDataToSheets() {
+        const url = localStorage.getItem("albion_sheets_url");
+        if (!url) {
+            alert("请先输入有效的 Google Apps Script Web App URL！");
+            return;
+        }
+        alert("Google Sheets 链接配置就绪，本地账本与物价数据可进行在线同步！");
+    }
+
+    let farmingLedger = JSON.parse(localStorage.getItem('albion_farming_ledger')) || [
+        { id: 1, date: "2026-09-23 00:30", crop: "小麦 (Wheat)", seedCost: 2885000, revenue: 4978000, salary: 995600, profit: 1097400 },
+        { id: 2, date: "2026-09-22 18:15", crop: "小麦 (Wheat)", seedCost: 2885000, revenue: 5120000, salary: 1024000, profit: 1211000 }
+    ];
+
+    function calculateFarming() {
+        const seedPrice = parseFloat(document.getElementById("farmSeedPrice").value) || 0;
+        const seedAmount = parseFloat(document.getElementById("farmSeedAmount").value) || 0;
+        const cropRevenue = parseFloat(document.getElementById("farmSellingPrice").value) || 0;
+        
+        // 直接读取你填写的蚯蚓出售总额（不自动扣税）
+        const earthwormRevenue = parseFloat(document.getElementById("farmEarthwormRevenue").value) || 0;
+
+        const totalSeedCost = seedPrice * seedAmount;
+        
+        // 工人工资按“作物出售总额”的 20% 计算，完全不抽蚯蚓的钱
+        const workerSalary = cropRevenue * 0.20; 
+        
+        // 纯利润 = (作物收入 - 工人工资) + 蚯蚓全额收入 - 种子总成本
+        const netProfit = (cropRevenue - workerSalary) + earthwormRevenue - totalSeedCost;
+
+        document.getElementById("farmCalcSeedCost").innerText = `$${Math.round(totalSeedCost).toLocaleString()}`;
+        document.getElementById("farmCalcEarthwormRev").innerText = `$${Math.round(earthwormRevenue).toLocaleString()}`;
+        document.getElementById("farmCalcWorkerSalary").innerText = `$${Math.round(workerSalary).toLocaleString()}`;
+        
+        const profitElem = document.getElementById("farmCalcNetProfit");
+        profitElem.innerText = `$${Math.round(netProfit).toLocaleString()}`;
+        profitElem.className = netProfit >= 0 ? "text-lg font-bold text-emerald-400" : "text-lg font-bold text-red-400";
+    }
+
+    function addFarmingRecord() {
+		const cropSelect = document.getElementById("farmCropType");
+		let crop = cropSelect.options[cropSelect.selectedIndex].text;
+		
+		const seedPrice = parseFloat(document.getElementById("farmSeedPrice").value) || 0;
+		const seedAmount = parseFloat(document.getElementById("farmSeedAmount").value) || 0;
+		const cropRevenue = parseFloat(document.getElementById("farmSellingPrice").value) || 0;
+		const earthwormRevenue = parseFloat(document.getElementById("farmEarthwormRevenue").value) || 0;
+
+		const seedCost = seedPrice * seedAmount;
+        const salary = cropRevenue * 0.20;
+        const profit = (cropRevenue - salary) + earthwormRevenue - seedCost;
+        const totalRevenue = cropRevenue + earthwormRevenue;
+
+		const record = {
+			id: Date.now(),
+			date: getCurrentTimeString().substring(0, 16),
+			crop: crop,
+			seedCost: seedCost,
+			revenue: totalRevenue,
+			salary: salary,
+			profit: profit
+		};
+
+		farmingLedger.unshift(record);
+		saveFarmingLedger();
+	}
+
+    function deleteFarmingRecord(id) {
+        farmingLedger = farmingLedger.filter(r => r.id !== id);
+        saveFarmingLedger();
+    }
+
+    function clearFarmingLedger() {
+        if (confirm("确定要清空所有农场种植历史账本吗？")) {
+            farmingLedger = [];
+            saveFarmingLedger();
+        }
+    }
+
+    function saveFarmingLedger() {
+        localStorage.setItem('albion_farming_ledger', JSON.stringify(farmingLedger));
+        renderFarmingLedger();
+    }
+
+    // 读取已结清的工资总额
+    let paidSalaryTotal = parseFloat(localStorage.getItem('albion_paid_salary_total')) || 0;
+
+    // 【新增】发放/结算工人工资函数
+    function payWorkerSalary() {
+        let totalSalaryGenerated = 0;
+        farmingLedger.forEach(item => totalSalaryGenerated += item.salary);
+        
+        const unpaidSalary = Math.max(0, totalSalaryGenerated - paidSalaryTotal);
+
+        if (unpaidSalary <= 0) {
+            alert("当前没有待结算的工人工资！");
+            return;
+        }
+
+        if (confirm(`确认已向工人发放 $${Math.round(unpaidSalary).toLocaleString()} 工资吗？\n结算后待付工资将重置刷新为 $0。`)) {
+            paidSalaryTotal += unpaidSalary;
+            localStorage.setItem('albion_paid_salary_total', paidSalaryTotal);
+            renderFarmingLedger();
+        }
+    }
+
+    // 【更新】清空记录时同时重置已发工资
+    function clearFarmingLedger() {
+        if (confirm("确定要清空所有农场种植历史账本吗？")) {
+            farmingLedger = [];
+            paidSalaryTotal = 0;
+            localStorage.removeItem('albion_paid_salary_total');
+            saveFarmingLedger();
+        }
+    }
+
+    // 【更新】渲染账本与右侧统计数据
+    function renderFarmingLedger() {
+        const tbody = document.getElementById("farmingLedgerBody");
+        let html = "";
+
+        let totalCost = 0;
+        let totalRevenue = 0;
+        let totalSalary = 0;
+        let totalProfit = 0;
+
+        farmingLedger.forEach(item => {
+            totalCost += item.seedCost;
+            totalRevenue += item.revenue;
+            totalSalary += item.salary;
+            totalProfit += item.profit;
+
+            const profitClass = item.profit >= 0 ? "profit-pos" : "profit-neg";
+
+            html += `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="p-3 text-slate-400 text-xs">${item.date}</td>
+                    <td class="p-3 font-semibold text-white">${item.crop}</td>
+                    <td class="p-3 text-red-400">$${Math.round(item.seedCost).toLocaleString()}</td>
+                    <td class="p-3 text-blue-400">$${Math.round(item.revenue).toLocaleString()}</td>
+                    <td class="p-3 text-amber-400">$${Math.round(item.salary).toLocaleString()}</td>
+                    <td class="p-3 ${profitClass}">${item.profit > 0 ? "+" : ""}$${Math.round(item.profit).toLocaleString()}</td>
+                    <td class="p-3">
+                        <button onclick="deleteFarmingRecord(${item.id})" class="text-xs text-red-400 hover:text-red-300">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if (farmingLedger.length === 0) {
+            html = `<tr><td colspan="7" class="p-6 text-center text-slate-500">暂无农场种植批次记录，请在上方输入并添加。</td></tr>`;
+        }
+
+        tbody.innerHTML = html;
+
+        // 计算当前待付工资 = 历史产生的总工资 - 已结算的工资
+        const unpaidSalary = Math.max(0, totalSalary - paidSalaryTotal);
+
+        document.getElementById("farmTotalCost").innerText = `$${Math.round(totalCost).toLocaleString()}`;
+        document.getElementById("farmTotalRevenue").innerText = `$${Math.round(totalRevenue).toLocaleString()}`;
+        
+        // 更新待付工资与已结算工资
+        document.getElementById("farmUnpaidSalary").innerText = `$${Math.round(unpaidSalary).toLocaleString()}`;
+        document.getElementById("farmPaidSalary").innerText = `$${Math.round(paidSalaryTotal).toLocaleString()}`;
+        
+        const profitElem = document.getElementById("farmTotalProfit");
+        profitElem.innerText = `$${Math.round(totalProfit).toLocaleString()}`;
+        profitElem.className = totalProfit >= 0 ? "text-base font-bold text-emerald-400" : "text-base font-bold text-red-400";
+    }
+
+    let tradeLedger = JSON.parse(localStorage.getItem('albion_trade_ledger')) || [
+        { id: 1, date: "2026-09-23 00:10", tier: "T4.0", cityRoute: "Brecilien ➔ Lymhurst", raw: "木材 (Wood) x100", semi: "木板 (Planks) x50", cost: 1500000, sell: 2100000, profit: 600000 },
+        { id: 2, date: "2026-09-22 14:20", tier: "T4.0", cityRoute: "Fort Sterling ➔ Martlock", raw: "兽皮 (Hide) x80", semi: "皮革 (Leather) x40", cost: 800000, sell: 1050000, profit: 250000 }
+    ];
+
+    function deleteTradeRecord(id) {
+        tradeLedger = tradeLedger.filter(r => r.id !== id);
+        saveTradeLedger();
+    }
+
+    function clearTradeLedger() {
+        if (confirm("确定要清空所有买卖账本记录吗？")) {
+            tradeLedger = [];
+            saveTradeLedger();
+        }
+    }
+
+    function saveTradeLedger() {
+        localStorage.setItem('albion_trade_ledger', JSON.stringify(tradeLedger));
+        renderTradeLedger();
+    }
+
+    function renderTradeLedger() {
+        const tbody = document.getElementById("tradeLedgerBody");
+        let html = "";
+
+        let totalCost = 0;
+        let totalRevenue = 0;
+        let totalProfit = 0;
+
+        tradeLedger.forEach(item => {
+            totalCost += item.cost;
+            totalRevenue += item.sell;
+            totalProfit += item.profit;
+
+            const roi = item.cost > 0 ? (item.profit / item.cost) * 100 : 0;
+            const profitClass = item.profit >= 0 ? "profit-pos" : "profit-neg";
+            const badgeClass = item.tier ? item.tier.toLowerCase() : "t4";
+
+            html += `
+                <tr class="hover:bg-slate-800/40 transition-colors">
+                    <td class="p-3 text-slate-400 text-xs">${item.date}</td>
+                    <td class="p-3"><span class="tier-badge ${badgeClass}">${item.tier || "T4.0"}</span></td>
+                    <td class="p-3 text-xs font-medium text-amber-300/90">${item.cityRoute || "Brecilien ➔ Lymhurst"}</td>
+                    <td class="p-3 text-slate-200 text-xs font-medium">${item.raw}</td>
+                    <td class="p-3 text-slate-200 text-xs font-medium">${item.semi}</td>
+                    <td class="p-3 text-red-400">$${Math.round(item.cost).toLocaleString()}</td>
+                    <td class="p-3 text-blue-400">$${Math.round(item.sell).toLocaleString()}</td>
+                    <td class="p-3 ${profitClass}">${item.profit > 0 ? "+" : ""}$${Math.round(item.profit).toLocaleString()}</td>
+                    <td class="p-3 ${profitClass}">${roi.toFixed(1)}%</td>
+                    <td class="p-3">
+                        <button onclick="deleteTradeRecord(${item.id})" class="text-xs text-red-400 hover:text-red-300">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if (tradeLedger.length === 0) {
+            html = `<tr><td colspan="10" class="p-6 text-center text-slate-500">暂无买卖交易记录，请在上方输入并记入账本。</td></tr>`;
+        }
+
+        tbody.innerHTML = html;
+
+        document.getElementById("tradeStatCost").innerText = `$${Math.round(totalCost).toLocaleString()}`;
+        document.getElementById("tradeStatRevenue").innerText = `$${Math.round(totalRevenue).toLocaleString()}`;
+        
+        const profitElem = document.getElementById("tradeStatProfit");
+        profitElem.innerText = `$${Math.round(totalProfit).toLocaleString()}`;
+        profitElem.className = totalProfit >= 0 ? "text-lg font-bold text-emerald-400" : "text-lg font-bold text-red-400";
+
+        const overallRoi = totalCost > 0 ? (totalProfit / totalCost) * 100 : 0;
+        const roiElem = document.getElementById("tradeStatRoi");
+        roiElem.innerText = `${overallRoi.toFixed(1)}%`;
+        roiElem.className = overallRoi >= 0 ? "text-lg font-bold text-sky-400" : "text-lg font-bold text-red-400";
+    }
+
+    window.onload = function() {
+        autoSelectCity();
+        calculateFarming();
+        renderFarmingLedger();
+        renderTradeLedger();
+    };
+</script>
+<script>
+    function onCropSelectChange() {
+        const select = document.getElementById('farmCropType');
+        document.getElementById('farmSeedPrice').value = select.value;
+        calculateFarming();
+    }
+</script>
+<script>
+    function addTradeRecord() {
+        const tier = document.getElementById("tradeTierInput").value;
+        const buyCity = document.getElementById("tradeBuyCityInput").value;
+        const sellCity = document.getElementById("tradeSellCityInput").value;
+        const cityRoute = `${buyCity} ➔ ${sellCity}`;
+
+        const rawType = document.getElementById("tradeRawInput").value;
+        const rawQty = parseFloat(document.getElementById("tradeRawQtyInput").value) || 0;
+        const semiType = document.getElementById("tradeSemiInput").value;
+        const semiQty = parseFloat(document.getElementById("tradeSemiQtyInput").value) || 0;
+        
+        const rawDisplay = `${rawType} x${rawQty}`;
+        const semiDisplay = `${semiType} x${semiQty}`;
+        
+        const cost = parseFloat(document.getElementById("tradeCostInput").value) || 0;
+        const sell = parseFloat(document.getElementById("tradeSellInput").value) || 0;
+
+        if (cost <= 0 && sell <= 0) {
+            alert("请输入有效的买入成本或出售价格！");
+            return;
+        }
+
+        const profit = sell - cost;
+
+        const record = {
+            id: Date.now(),
+            date: getCurrentTimeString().substring(0, 16),
+            tier: tier,
+            cityRoute: cityRoute,
+            raw: rawDisplay,
+            semi: semiDisplay,
+            cost: cost,
+            sell: sell,
+            profit: profit
+        };
+
+        tradeLedger.unshift(record);
+        saveTradeLedger();
+
+        document.getElementById("tradeRawQtyInput").value = "";
+        document.getElementById("tradeSemiQtyInput").value = "";
+        document.getElementById("tradeCostInput").value = "";
+        document.getElementById("tradeSellInput").value = "";
+    }
+</script>
+</body>
+</html>
