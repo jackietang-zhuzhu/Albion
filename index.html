@@ -1391,10 +1391,24 @@
         if (files && files.length > 0) processOcrFile(files[0]);
     }
 
-    function handleFileSelect(e) {
-        const files = e.target.files;
-        if (files && files.length > 0) processOcrFile(files[0]);
-    }
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) {
+    processOcrFile(file); 
+  }
+}
+window.processOcrFile = async function(file) {
+  console.log("成功接收到图片，开始 OCR 识别:", file);
+  
+  try {
+    const worker = await Tesseract.createWorker('eng'); 
+    const ret = await worker.recognize(file);
+    await worker.terminate();
+    console.log("识别出的文本：", ret.data.text);
+  } catch (error) {
+    console.error("识别过程出错：", error);
+  }
+};
 </script>
 </body>
 </html>
