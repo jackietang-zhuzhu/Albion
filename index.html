@@ -1391,64 +1391,203 @@
         if (files && files.length > 0) processOcrFile(files[0]);
     }
 
-function handleFileSelect(event) {
-  const file = event.target.files[0];
-  if (file) {
-    processOcrFile(file); 
-  }
-}
-window.processOcrFile = async function(file) {
-  if (!file) return;
-
-  console.log("📷 已接收到截图，开始 OCR 识图:", file.name); //
-
-  try {
-    const worker = await Tesseract.createWorker('eng');
-    const ret = await worker.recognize(file); //
-    await worker.terminate(); //
-    const rawText = ret.data.text;
-    console.log("📄 原始识别文本:\n", rawText); //
-
-    const numbers = rawText.match(/\b\d{1,3}(,\d{3})*(\.\d+)?\b|\b\d+\b/g);
-
-    if (!numbers || numbers.length === 0) {
-      console.warn("⚠️ 未能在截图里找到有效的价格数字，请确保截图清晰");
-      return;
-    }
-    console.log("🔢 提取到的数字序列:", numbers);
-    const targetInput = document.getElementById('t3Price') || document.querySelector('input[type="number"]');
-    if (targetInput) {
-
-      const cleanPrice = numbers[0].replace(/,/g, '');
-      targetInput.value = cleanPrice;
-      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-      targetInput.dispatchEvent(new Event('change', { bubbles: true }));
-      console.log(`✅ 成功填入价格: ${cleanPrice}`);
-    } else {
-      console.warn("⚠️ 提取到了数字，但未找到对应的 input 输入框 HTML 元素，请检查 id");
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files && files.length > 0) processOcrFile(files[0]);
     }
 
-  } catch (error) {
-    console.error("❌ OCR 识别过程出错:", error); //
-  }
-};
+    // 全局剪贴板粘贴事件处理 (支持 Ctrl+V 快捷粘贴截图)
+    document.addEventListener('paste', function(e) {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
 
-function handleFileSelect(event) {
-  const file = event.target.files && event.target.files[0];
-  if (file) {
-    processOcrFile(file); 
-  }
-}
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                switchTab('ocr');
+                processOcrFile(file);
+                break;
+            }
+        }
+    });
 
-function handleDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  const dt = e.dataTransfer;
-  const files = dt && dt.files;
-  if (files && files.length > 0) {
-    processOcrFile(files[0]);
-  }
-}
+    function processOcrFile(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            alert('请上传有效的图片文件！');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentOcrImageSrc = e.target.result;
+            const previewImg = document.getElementById('ocrPreviewImage');
+            if (previewImg) previewImg.src = currentOcrImageSrc;
+
+            runOcr(currentOcrImageSrc);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function runOcr(imageSource) {
+        const statusBox = document.getElementById('ocrStatusBox');
+        const statusText = document.getElementById('ocrStatusText');
+        const progressBar = document.getElementById('ocrProgressBar');
+        const progressPercent = document.getElementById('ocrProgressPercent');
+        const resultsContainer = document.getElementById('ocrResultsContainer');
+
+        if (statusBox) statusBox.classList.remove('hidden');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+
+        try {
+            const worker = await Tesseract.createWorker('eng', 1, {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const pct = Math.round((m.progress || 0) * 100);
+                        if (progressBar) progressBar.style.width = `${pct}%`;
+                        if (progressPercent) progressPercent.innerText = `${pct}%`;
+                        if (statusText) statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> 正在识别画面物价数字中 (${pct}%)...`;
+                    } else {
+                        if (statusText) statusText.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> 正在准备识图引擎: ${m.status}...`;
+                    }
+                }
+            });
+
+            const ret = await worker.recognize(imageSource);
+            await worker.terminate();
+
+            parseOcrText(ret.data.text);
+        } catch (err) {
+            console.error(err);
+            alert('识图过程失败：' + err.message);
+        } finally {
+            if (statusBox) statusBox.classList.add('hidden');
+        }
+    }
+
+    function parseOcrText(text) {
+        const resultsContainer = document.getElementById('ocrResultsContainer');
+        const extractedList = document.getElementById('ocrExtractedList');
+        const detectedCount = document.getElementById('ocrDetectedCount');
+
+        if (resultsContainer) resultsContainer.classList.remove('hidden');
+
+        const lines = text.split('\n');
+        detectedOcrPrices = [];
+
+        lines.forEach(line => {
+            const cleaned = line.trim();
+            if (!cleaned) return;
+
+            // 正则匹配符合物价特征的数字（如 1,250 或 4300）
+            const matches = cleaned.match(/\b\d{1,3}(?:,\d{3})+|\b\d{2,7}\b/g);
+            if (matches) {
+                matches.forEach(m => {
+                    const val = parseInt(m.replace(/,/g, ''), 10);
+                    if (val > 0 && !detectedOcrPrices.some(item => item.value === val && item.raw === cleaned)) {
+                        detectedOcrPrices.push({ value: val, raw: cleaned });
+                    }
+                });
+            }
+        });
+
+        if (detectedCount) detectedCount.innerText = `共识别 ${detectedOcrPrices.length} 条`;
+
+        let html = '';
+        if (detectedOcrPrices.length === 0) {
+            html = `<div class="p-3 bg-slate-900 text-slate-400 text-xs text-center rounded border border-slate-800">未能自动识别出价格数值，请尝试使用 Win+Shift+S 精准截取拍卖行价格区域。</div>`;
+        } else {
+            detectedOcrPrices.forEach((item) => {
+                html += `
+                    <div onclick="selectOcrPrice(${item.value})" class="p-2 bg-slate-900/90 hover:bg-amber-500/10 border border-slate-800 hover:border-amber-500/50 rounded flex justify-between items-center cursor-pointer transition-colors text-xs">
+                        <span class="text-slate-300 font-mono text-xs truncate max-w-[200px]" title="${item.raw}">${item.raw}</span>
+                        <span class="font-bold text-amber-400 font-mono text-sm">$${item.value.toLocaleString()} <i class="fa-solid fa-check-circle text-xs text-amber-500/60 ml-1"></i></span>
+                    </div>
+                `;
+            });
+        }
+
+        if (extractedList) extractedList.innerHTML = html;
+
+        // 默认选中第一个识别到的价格
+        if (detectedOcrPrices.length > 0) {
+            selectOcrPrice(detectedOcrPrices[0].value);
+        }
+    }
+
+    function selectOcrPrice(val) {
+        const input = document.getElementById('selectedOcrPrice');
+        if (input) input.value = val;
+    }
+
+    function resetOcrImage() {
+        currentOcrImageSrc = null;
+        detectedOcrPrices = [];
+        const resultsContainer = document.getElementById('ocrResultsContainer');
+        const fileInput = document.getElementById('ocrFileInput');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+    }
+
+    function fillOcrPriceToCity(field) {
+        const price = parseFloat(document.getElementById('selectedOcrPrice').value) || 0;
+        const targetTier = document.getElementById('ocrFillTargetTier').value;
+        const city = document.getElementById('city').value;
+
+        if (price <= 0) {
+            alert('请先在列表中点击选择一个有效价格！');
+            return;
+        }
+
+        const compareTierSelect = document.getElementById('compareTierSelect');
+        if (compareTierSelect) compareTierSelect.value = targetTier;
+
+        if (!cityData[targetTier]) cityData[targetTier] = {};
+        if (!cityData[targetTier][city]) {
+            cityData[targetTier][city] = { raw: 0, prevRaw: 0, sell: 0, time: getCurrentTimeString() };
+        }
+
+        if (field === 'raw') {
+            cityData[targetTier][city].prevRaw = cityData[targetTier][city].raw;
+            cityData[targetTier][city].raw = price;
+        } else if (field === 'sell') {
+            cityData[targetTier][city].sell = price;
+        }
+        cityData[targetTier][city].time = getCurrentTimeString();
+
+        localStorage.setItem('albion_tier_city_data_v2', JSON.stringify(cityData));
+        calculateRefining();
+        
+        switchTab('refining');
+        alert(`已成功将价格 $${price.toLocaleString()} 填入 [${city}] 的 ${targetTier} ${field === 'raw' ? '原材料采购价' : '成品出售价'}！`);
+    }
+
+    function fillOcrPriceToTrade(type) {
+        const price = parseFloat(document.getElementById('selectedOcrPrice').value) || 0;
+        const targetTier = document.getElementById('ocrFillTargetTier').value;
+
+        if (price <= 0) {
+            alert('请先在列表中点击选择一个有效价格！');
+            return;
+        }
+
+        switchTab('trade');
+        if (type === 'buy') {
+            document.getElementById('buyTier').value = targetTier;
+            document.getElementById('buyCost').value = price;
+            alert(`已将价格 $${price.toLocaleString()} 填入买入账本成本！`);
+        } else if (type === 'sell') {
+            document.getElementById('sellTier').value = targetTier;
+            document.getElementById('sellRevenue').value = price;
+            alert(`已将价格 $${price.toLocaleString()} 填入卖出账本收入！`);
+        }
+    }
+
+    // 页面加载完毕初始化渲染
+    window.addEventListener('DOMContentLoaded', () => {
+        calculateRefining();
+        renderFarmingLedger();
+        renderTradeLedger();
+    });
 </script>
 </body>
 </html>
