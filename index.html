@@ -1398,17 +1398,57 @@ function handleFileSelect(event) {
   }
 }
 window.processOcrFile = async function(file) {
-  console.log("成功接收到图片，开始 OCR 识别:", file);
-  
+  if (!file) return;
+
+  console.log("📷 已接收到截图，开始 OCR 识图:", file.name); //
+
   try {
-    const worker = await Tesseract.createWorker('eng'); 
-    const ret = await worker.recognize(file);
-    await worker.terminate();
-    console.log("识别出的文本：", ret.data.text);
+    const worker = await Tesseract.createWorker('eng');
+    const ret = await worker.recognize(file); //
+    await worker.terminate(); //
+    const rawText = ret.data.text;
+    console.log("📄 原始识别文本:\n", rawText); //
+
+    const numbers = rawText.match(/\b\d{1,3}(,\d{3})*(\.\d+)?\b|\b\d+\b/g);
+
+    if (!numbers || numbers.length === 0) {
+      console.warn("⚠️ 未能在截图里找到有效的价格数字，请确保截图清晰");
+      return;
+    }
+    console.log("🔢 提取到的数字序列:", numbers);
+    const targetInput = document.getElementById('t3Price') || document.querySelector('input[type="number"]');
+    if (targetInput) {
+
+      const cleanPrice = numbers[0].replace(/,/g, '');
+      targetInput.value = cleanPrice;
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+      console.log(`✅ 成功填入价格: ${cleanPrice}`);
+    } else {
+      console.warn("⚠️ 提取到了数字，但未找到对应的 input 输入框 HTML 元素，请检查 id");
+    }
+
   } catch (error) {
-    console.error("识别过程出错：", error);
+    console.error("❌ OCR 识别过程出错:", error); //
   }
 };
+
+function handleFileSelect(event) {
+  const file = event.target.files && event.target.files[0];
+  if (file) {
+    processOcrFile(file); 
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dt = e.dataTransfer;
+  const files = dt && dt.files;
+  if (files && files.length > 0) {
+    processOcrFile(files[0]);
+  }
+}
 </script>
 </body>
 </html>
